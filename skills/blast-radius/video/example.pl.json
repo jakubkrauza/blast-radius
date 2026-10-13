@@ -1,0 +1,144 @@
+{
+  "lang": "pl",
+  "title": "feat/welcome",
+  "tierNames": ["farba", "meble", "ściany nośne", "fundament"],
+  "tree": ["src/app/api/signup/route.ts", "src/components/button.tsx", "src/lib/dates.ts", "src/lib/users.ts", "package.json"],
+  "scenes": [
+    {
+      "type": "intro",
+      "title": "feat/welcome",
+      "subtitle": "mail powitalny przy rejestracji i dedup userów",
+      "subtitleCue": "Dodaje",
+      "say": "Siema. Szybko o tym PR-ze. Dodaje maila powitalnego przy rejestracji i pilnuje, żeby nie było zduplikowanych userów."
+    },
+    {
+      "type": "tldr",
+      "eyebrow": "tl;dr",
+      "rows": [
+        { "label": "co robi", "value": "mail powitalny i dedup userów", "cue": "TL;DR" },
+        { "label": "rozmiar", "value": "17 linii, 3 pliki", "cue": "siedemnaście" },
+        { "label": "architektura", "value": "signup wychodzi poza system", "cue": "Ale dotyka", "risk": true }
+      ],
+      "say": "TL;DR: diff jest malutki, siedemnaście linii. Ale dotyka fundamentów, bo rejestracja zaczyna gadać z zewnętrznym serwisem."
+    },
+    {
+      "type": "arch",
+      "eyebrow": "architektura",
+      "titleBefore": "przed zmianą",
+      "titleAfter": "po zmianie",
+      "context": "POST /api/signup",
+      "afterCue": "Teraz",
+      "before": [
+        { "label": "route.ts", "sub": "signup handler" },
+        { "label": "createUser()", "sub": "lib/users.ts" },
+        { "label": "db.insert()", "sub": "zapis usera" }
+      ],
+      "after": [
+        { "label": "route.ts", "sub": "signup handler" },
+        { "label": "createUser()", "sub": "lib/users.ts" },
+        { "label": "findMany()", "sub": "cała tabela userów", "kind": "new", "cue": "Czytamy" },
+        { "label": "mailer API", "sub": "zewnętrzny serwis", "kind": "external", "cue": "wołamy" },
+        { "label": "db.insert()", "sub": "zapis usera" }
+      ],
+      "boundaryLabel": "poza systemem",
+      "boundaryCue": "pierwsza rzecz",
+      "note": "Pierwszy raz signup zależy od czegoś, czego nie kontrolujemy. Tego nie cofniesz revertem.",
+      "say": "Zobacz architekturę. Wcześniej signup szedł prosto do bazy. Teraz po drodze są dwa nowe kroki. Czytamy całą tabelę userów, żeby znaleźć duplikat. I wołamy zewnętrzny mailer. To pierwsza rzecz w tej apce, która wychodzi poza nasz system."
+    },
+    {
+      "type": "tiers",
+      "eyebrow": "posortowane po tym, jak trudno cofnąć",
+      "files": [
+        { "path": "src/components/button.tsx", "tier": 0, "cue": "Kolor" },
+        { "path": "package.json", "tier": 2, "cue": "Typ User", "label": "type User, date-fns-tz" },
+        { "path": "src/lib/users.ts", "tier": 3, "cue": "A users" }
+      ],
+      "say": "Posortujmy to po tym, jak trudno to cofnąć. Kolor buttona to farba. Typ User i nowa paczka to ściany nośne. A users.ts to fundament."
+    },
+    {
+      "type": "read",
+      "eyebrow": "do przeczytania",
+      "linesToRead": 12,
+      "linesTotal": 17,
+      "unit": "linii",
+      "byTier": [2, 0, 6, 9],
+      "cue": "dwanaście",
+      "say": "Czyli z siedemnastu linii realnie czytasz dwanaście."
+    },
+    {
+      "type": "diff",
+      "tier": 0,
+      "eyebrow": "0 · farba",
+      "title": "rzuć okiem, leć dalej",
+      "file": "src/components/button.tsx",
+      "language": "tsx",
+      "lines": [
+        { "type": "removed", "oldLine": 1, "content": "export const Button = () => <button style={{ color: \"blue\" }}>Sign up</button>;" },
+        { "type": "added", "newLine": 1, "content": "export const Button = () => <button style={{ color: \"green\" }}>Sign up</button>;" }
+      ],
+      "say": "Button? Niebieski na zielony. Rzucasz okiem i lecisz dalej."
+    },
+    {
+      "type": "diff",
+      "tier": 3,
+      "eyebrow": "3 · fundament",
+      "file": "src/lib/users.ts",
+      "language": "typescript",
+      "lines": [
+        { "type": "context", "oldLine": 1, "newLine": 1, "content": "import { db } from \"./db\";" },
+        { "type": "added", "newLine": 2, "content": "import { formatInTimeZone } from \"date-fns-tz\";" },
+        { "type": "removed", "oldLine": 2, "content": "export type User = { email: string; name?: string };" },
+        { "type": "added", "newLine": 3, "content": "export type User = { email: string; name: string; plan: string };" },
+        { "type": "context", "oldLine": 3, "newLine": 4, "content": "export async function createUser(u: User) {" },
+        { "type": "added", "newLine": 5, "content": "  const all = await db.users.findMany();" },
+        { "type": "added", "newLine": 6, "content": "  for (const x of all) { if (x.email === u.email) return x; }" },
+        { "type": "added", "newLine": 7, "content": "  try {" },
+        { "type": "added", "newLine": 8, "content": "    await fetch(\"https://api.mailer.example/send\", { ... });" },
+        { "type": "added", "newLine": 9, "content": "  } catch (e) {}" },
+        { "type": "added", "newLine": 10, "content": "  return db.users.insert(u);" },
+        { "type": "added", "newLine": 11, "content": "}" }
+      ],
+      "tags": [
+        { "text": "czyta całą tabelę", "cue": "Czyta" },
+        { "text": "zewnętrzne API", "cue": "strzela" },
+        { "text": "zapis do bazy", "cue": "zapisuje" }
+      ],
+      "say": "users.ts to jest mięso. Czyta całą tabelę, strzela do API maili i zapisuje do bazy."
+    },
+    {
+      "type": "code",
+      "tier": 3,
+      "eyebrow": "haczyk",
+      "file": "src/lib/users.ts",
+      "language": "typescript",
+      "code": "export async function createUser(u: User) {\n  const all = await db.users.findMany();\n  for (const x of all) { if (x.email === u.email) return x; }\n  try {\n    await fetch(\"https://api.mailer.example/send\", { ... });\n  } catch (e) {}\n  return db.users.insert(u);\n}",
+      "points": [
+        { "text": "mail wychodzi przed zapisem usera", "line": 5, "cue": "Mail idzie" },
+        { "text": "pusty catch połyka błędy mailera", "line": 6, "cue": "pusty catch" },
+        { "text": "insert pada, mail już poszedł", "line": 7, "cue": "Jak insert" }
+      ],
+      "verdict": { "text": "blocks", "cue": "żaden revert" },
+      "say": "I tu jest haczyk. Mail idzie, zanim user zostanie zapisany. A pusty catch połyka każdy błąd mailera. Jak insert się wywali, ktoś dostanie maila do konta, które nie istnieje. I żaden revert tego maila nie cofnie."
+    },
+    {
+      "type": "fix",
+      "eyebrow": "jak bym to zrobił",
+      "file": "src/lib/users.ts",
+      "language": "typescript",
+      "code": "export async function createUser(u: User) {\n  // unique index on users.email does the dedupe\n  const user = await db.users.upsert({ where: { email: u.email }, create: u });\n  // the queue retries and logs failures\n  await queue.add(\"welcome-email\", { userId: user.id });\n  return user;\n}",
+      "points": [
+        { "text": "najpierw zapis, unikalny index na email", "cue": "Najpierw" },
+        { "text": "mail z kolejki, dopiero po zapisie", "cue": "Potem mail" },
+        { "text": "błędy logowane i ponawiane", "cue": "błędy" }
+      ],
+      "say": "Ja bym to zrobił tak. Najpierw zapis z unikalnym mailem. Potem mail przez kolejkę. A błędy logujemy, zamiast je chować."
+    },
+    {
+      "type": "outro",
+      "eyebrow": "przeczytaj tylko to",
+      "ranges": ["src/lib/users.ts:7-9", "src/lib/users.ts:4-6", "src/app/api/signup/route.ts:3-4"],
+      "cue": "trzy",
+      "say": "Podsumowując: trzy miejsca do przeczytania. Resztę przelatujesz wzrokiem."
+    }
+  ]
+}

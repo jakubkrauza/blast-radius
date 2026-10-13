@@ -77,6 +77,8 @@ you also need `git` and `bash`. `gh` only if you pass PR numbers.
 | some other branch | `/blast-radius feat/dedup` | `$blast-radius feat/dedup` |
 | also write an html page like the screenshot | add `--html` | add `--html` |
 | also post the report as a PR comment | add `--comment` | add `--comment` |
+| report and voiceover in another language | add `--lang pl` | add `--lang pl` |
+| also make a narrated video walkthrough | add `--video` | add `--video` |
 
 it never posts anything unless you pass `--comment`. it never runs on its own
 either, only when you call it.
@@ -95,6 +97,41 @@ you can also run the git part on its own, no AI involved:
 ```bash
 bash ~/.claude/skills/blast-radius/scripts/signals.sh main HEAD
 ```
+
+## video walkthroughs
+
+add `--video` and you also get an mp4: a colleague who read the PR walks you
+through it in 60 to 120 seconds. tl;dr first, then what changed in the
+architecture (before and after, as a diagram), the tiers, the risky code with
+the bad lines lit up, how they'd fix it, and what to read.
+
+[watch the demo](docs/demo.mp4) (polish voiceover, 1080p)
+
+- the agent writes a small `video.json` from the review. the scene types are
+  in [video.md](skills/blast-radius/video.md), the demo's script is
+  [example.pl.json](skills/blast-radius/video/example.pl.json)
+- [beUI](https://beui.dev) components (file tree, diff, code block) render the
+  real code, so nothing on screen is made up
+- every animation waits for the word that explains it. the voice gives
+  per-character timestamps, the scenes hang off those
+- it renders frame by frame on a virtual clock, so no dropped frames even at
+  4k60. `--quality draft|hd|4k` inside `make.mjs`, default hd
+- voiceover by [ElevenLabs](https://elevenlabs.io) if you set a key, any
+  language they support. no key: a silent video with captions
+
+```bash
+# once, optional. without it you get captions only
+mkdir -p ~/.config/blast-radius
+echo "ELEVENLABS_API_KEY=sk_..." >> ~/.config/blast-radius/env
+```
+
+optional: `ELEVENLABS_VOICE_ID` (default is the premade "Chris") and
+`ELEVENLABS_MODEL` (default `eleven_v4`). free elevenlabs plans only get
+premade voices over the api, and a 90 second video is about 1500 characters
+of a 10k monthly free quota. lines are cached, re-renders are free.
+
+the first `--video` run installs the player (`npm install`, ~300 MB with
+chrome). needs node 20+.
 
 ## what you get
 
@@ -218,6 +255,7 @@ it's four markdown files and a bash script in
 - [report-format.md](skills/blast-radius/report-format.md) what the output looks like
 - [scripts/signals.sh](skills/blast-radius/scripts/signals.sh) path patterns are at the top (`T3`, `T2`)
 - [agents/openai.yaml](skills/blast-radius/agents/openai.yaml) codex settings (no auto-trigger)
+- [video.md](skills/blast-radius/video.md) and [video/](skills/blast-radius/video) the video scenes, player and renderer
 
 ## stuff i read while building this
 

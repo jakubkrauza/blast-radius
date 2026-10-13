@@ -1,7 +1,7 @@
 ---
 name: blast-radius
 description: Sort a PR's changes from cosmetic (paint) to foundational (foundation), check the risky ones for safety, scale and AI slop, and list the exact lines a human must read. Use on a PR number, a branch, or the current branch.
-argument-hint: "[pr-number | branch] [--comment] [--html]"
+argument-hint: "[pr-number | branch] [--lang pl] [--video] [--html] [--comment]"
 disable-model-invocation: true
 context: fork
 agent: general-purpose
@@ -19,7 +19,11 @@ and why.
 
 - **Arguments.** Claude Code fills them in here: `$ARGUMENTS`. If that is
   empty or still shows a placeholder, read the arguments from the user's
-  message instead (a PR number, a branch, `--comment`, `--html`).
+  message instead (a PR number, a branch, `--lang <code>`, `--video`,
+  `--html`, `--comment`).
+- **Language.** `--lang <code>` (for example `pl`, `de`, `en`) sets the
+  language of the report and the video voiceover. Default `en`. Code, paths
+  and identifiers stay as they are.
 - **`<skill-dir>`** below means the folder that holds this SKILL.md. Claude
   Code fills it in here: `${CLAUDE_SKILL_DIR}`. Other agents: use the folder
   you loaded this file from.
@@ -143,3 +147,11 @@ Follow [report-format.md](report-format.md). The headline number is
   explains, write it to `/tmp/blast-radius/<target>.html`, and give the path.
 - `--comment` with a PR number: write the markdown to a temp file and run
   `gh pr comment <n> --body-file <file>`. Only then.
+- No `--video`: end the report with one line: "add `--video` for a narrated
+  walkthrough".
+
+## Step 8. Video (only with --video)
+
+Follow [video.md](video.md): write `video.json` from the report, check it,
+render it with `<skill-dir>/video/make.mjs`, and give the mp4 path. The video
+is extra. If it fails, the markdown report is still the answer.
