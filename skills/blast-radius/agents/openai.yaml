@@ -1,0 +1,8 @@
+# codex settings. claude code ignores this file.
+interface:
+  display_name: "Blast radius"
+  short_description: "Sort a PR from paint to foundation and list the lines you must read"
+  default_prompt: "Use $blast-radius on the current branch."
+policy:
+  # review runs only when you ask for it ($blast-radius), never on its own.
+  allow_implicit_invocation: false
