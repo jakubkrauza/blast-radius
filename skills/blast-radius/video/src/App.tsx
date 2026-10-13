@@ -9,7 +9,6 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState, type ReactNode } from "react";
-import { FileCode2 } from "lucide-react";
 import { CodeBlock } from "@/components/agents/code-block";
 import { FileDiff, type FileDiffLine } from "@/components/agents/file-diff";
 import { FileTree, FileTreeFile, FileTreeFolder } from "@/components/motion/file-tree";
@@ -312,19 +311,31 @@ function Diff({ s, t }: SceneProps) {
   );
 }
 
+// "line": 5 or [5, 7] -> [5, 6, 7]
+const lineRange = (line: number | number[] | undefined) =>
+  line === undefined ? [] : Array.isArray(line) ? Array.from({ length: line[1] - line[0] + 1 }, (_, k) => line[0] + k) : [line];
+
+// code on screen, explained by the voice.
+// mode "explain" (a walkthrough): the highlight follows the line being talked about.
+// mode "problem" (default): each problem line lights up red and stays lit.
 function Code({ s, t }: SceneProps) {
+  const explain = s.mode === "explain";
+  const reached = s.points.filter((x: any) => t > cue(s, x.cue));
+  const lit = explain ? lineRange(reached.at(-1)?.line) : reached.flatMap((x: any) => lineRange(x.line));
   const verdict = s.verdict && t > cue(s, s.verdict.cue);
   const tone = s.verdict?.text === "ok" ? GREEN : s.verdict?.text === "check" ? TIER_COLORS[2] : RED;
+  const mark = explain ? "#64a0ff" : RED;
   return (
     <SceneBox>
       <Eyebrow color={TIER_COLORS[s.tier ?? 3]}>{s.eyebrow}</Eyebrow>
-      <div className="problem-code relative">
+      {s.title && <div className="mb-5 text-[26px] font-medium tracking-[-0.02em]">{s.title}</div>}
+      <div className={`${explain ? "explain-code" : "problem-code"} relative`}>
         <CodeBlock
           filename={s.file}
           language={(s.language ?? "typescript") as AgentCodeLanguage}
           code={s.code}
           status="complete"
-          highlightLines={s.points.filter((x: any) => x.line && t > cue(s, x.cue)).map((x: any) => x.line)}
+          highlightLines={lit}
           maxHeight={270}
           copyable={false}
         />
@@ -342,7 +353,7 @@ function Code({ s, t }: SceneProps) {
           )}
         </AnimatePresence>
       </div>
-      <Points s={s} t={t} points={s.points} mark={(i) => <span className="w-4 font-mono text-xs" style={{ color: RED }}>{i + 1}</span>} />
+      <Points s={s} t={t} points={s.points} mark={(i) => <span className="w-4 font-mono text-xs" style={{ color: mark }}>{i + 1}</span>} />
     </SceneBox>
   );
 }
@@ -367,15 +378,24 @@ function Fix({ s, t }: SceneProps) {
   );
 }
 
+// the decision: verdict in big type, then what to do next
 function Outro({ s, t }: SceneProps) {
+  const tone = s.verdict?.text === "ok" ? GREEN : s.verdict?.text === "check" ? TIER_COLORS[2] : RED;
+  const items: { text: string; cue?: string }[] = s.items ?? (s.ranges ?? []).map((r: string) => ({ text: r, cue: s.cue }));
   return (
     <SceneBox>
       <Eyebrow>{s.eyebrow}</Eyebrow>
+      {s.verdict && (
+        <Reveal on={t > cue(s, s.verdict.cue)} y={16} className="mb-8 flex items-baseline gap-5">
+          <span className="text-[64px] leading-none font-semibold tracking-[-0.04em]" style={{ color: tone }}>{s.verdict.label ?? s.verdict.text}</span>
+          {s.verdict.note && <span className="text-lg text-white/50">{s.verdict.note}</span>}
+        </Reveal>
+      )}
       <div className="flex flex-col">
-        {s.ranges.map((r: string, i: number) => (
-          <Reveal key={r} on={t > cue(s, s.cue) + i * 350} className="flex items-center gap-4 border-t border-white/[0.08] py-4 font-mono text-[18px]">
-            <FileCode2 className="size-4 text-white/35" />
-            {r}
+        {items.map((x, i) => (
+          <Reveal key={x.text} on={t > cue(s, x.cue) + (x.cue ? 0 : i * 350)} className="flex items-center gap-4 border-t border-white/[0.08] py-4 text-[20px] tracking-[-0.01em]">
+            <span className="font-mono text-sm text-white/35">{i + 1}</span>
+            {x.text}
           </Reveal>
         ))}
       </div>

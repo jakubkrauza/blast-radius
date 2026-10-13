@@ -28,3 +28,8 @@
 .problem-code [class*="bg-blue-500"] {
   background: rgba(255, 95, 87, 0.16);
 }
+
+/* blue, moving highlight in "explain" code scenes */
+.explain-code [class*="bg-blue-500"] {
+  background: rgba(100, 160, 255, 0.16);
+}

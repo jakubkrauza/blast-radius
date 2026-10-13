@@ -68,7 +68,7 @@ const TYPES = ["intro", "tldr", "arch", "tiers", "read", "diff", "code", "fix", 
 // every phrase a scene waits for, so we can check they are actually said
 function cuesOf(s) {
   const list = [s.cue, s.subtitleCue, s.afterCue, s.boundaryCue, s.noteCue, s.verdict?.cue];
-  for (const key of ["rows", "after", "files", "tags", "points"]) for (const x of s[key] ?? []) list.push(x.cue);
+  for (const key of ["rows", "after", "files", "tags", "points", "items"]) for (const x of s[key] ?? []) list.push(x.cue);
   return list.filter(Boolean);
 }
 

@@ -147,11 +147,13 @@ Follow [report-format.md](report-format.md). The headline number is
   explains, write it to `/tmp/blast-radius/<target>.html`, and give the path.
 - `--comment` with a PR number: write the markdown to a temp file and run
   `gh pr comment <n> --body-file <file>`. Only then.
-- No `--video`: end the report with one line: "add `--video` for a narrated
-  walkthrough".
+- No `--video`: end the report with one line: "add `--video` to get it
+  explained instead of reading it".
 
 ## Step 8. Video (only with --video)
 
-Follow [video.md](video.md): write `video.json` from the report, check it,
-render it with `<skill-dir>/video/make.mjs`, and give the mp4 path. The video
-is extra. If it fails, the markdown report is still the answer.
+The video replaces reading the diff: it explains every tier 2 and 3 change
+on screen, line by line, and ends with a verdict and next steps, never with
+"go read this". Follow [video.md](video.md): write `video.json` from the
+report, check it, render it with `<skill-dir>/video/make.mjs`, and give the
+mp4 path. If it fails, the markdown report is still the answer.

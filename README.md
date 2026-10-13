@@ -1,6 +1,6 @@
 # blast-radius
 
-a skill for claude code and codex that tells you which lines of a PR you actually have to read.
+a skill for claude code and codex that tells you which lines of a PR you actually have to read. or, with `--video`, explains them to you so you don't have to.
 
 everyone's shipping code they didn't read now. i get the appeal. i also don't
 want AI slop sitting in my db layer for six months before anyone notices.
@@ -32,7 +32,9 @@ color, sure. a migration that dropped a column, or 400 records already
 overwritten in your CRM, no. those are one-way doors and they get the most
 attention.
 
-## install
+## setup
+
+### 1. install the skill
 
 one command, both agents:
 
@@ -46,27 +48,62 @@ no node? same result with plain git:
 curl -fsSL https://raw.githubusercontent.com/jakubkrauza/blast-radius/main/install.sh | bash
 ```
 
-restart your agent after either one. that's it. no config, no api keys,
-nothing to set up per repo.
-
-where it ends up:
+restart your agent (open a new session). that's all the review needs: no
+config, no api keys, nothing per repo.
 
 | agent | folder |
 |---|---|
 | claude code | `~/.claude/skills/blast-radius` |
 | codex | `~/.agents/skills/blast-radius` |
 
-the curl script clones the repo to `~/.local/share/blast-radius` and symlinks
-it into the agents it finds. it only touches folders it created.
+### 2. tools the review uses
 
-**update:** `npx skills update blast-radius`, or run the curl line again.
-**remove:** `npx skills remove blast-radius -g`, or the curl line with
+- `git` and `bash`: you have them
+- `gh`, only if you pass PR numbers. install it and run `gh auth login` once
+
+### 3. video (optional)
+
+- **node 20+**: `node -v` to check. the first `--video` run installs the
+  player by itself (`npm install`, ~300 MB including a headless chrome), so
+  give it a few minutes once
+- **a voice (optional)**: without it you get a silent video with captions.
+  for a voiceover, make a free account on [elevenlabs](https://elevenlabs.io),
+  create an api key (settings, api keys) and save it:
+
+  ```bash
+  mkdir -p ~/.config/blast-radius
+  echo "ELEVENLABS_API_KEY=sk_..." >> ~/.config/blast-radius/env
+  chmod 600 ~/.config/blast-radius/env
+  ```
+
+  that file is read on every run, from any repo. never put the key in a repo.
+- **pick a voice (optional)**: add `ELEVENLABS_VOICE_ID=...` to the same
+  file. default is the premade "Chris". free plans only get premade voices
+  over the api; any voice from the library (for example a native polish one)
+  needs a paid plan or $5 of credits. `ELEVENLABS_MODEL` defaults to
+  `eleven_v4`, their best model.
+- **cost**: a 2 minute video is about 1800 characters. the free plan has 10k
+  a month. every line is cached in `~/.cache/blast-radius/tts`, so
+  re-rendering the same script is free.
+
+### update
+
+```bash
+npx skills update blast-radius -g
+```
+
+or run the curl line again. then restart your agent. a running session keeps
+the old version.
+
+### remove
+
+`npx skills remove blast-radius -g`, or the curl line with
 `| bash -s -- --uninstall`.
 
-**one repo for the whole team:** run the npx line inside the repo without
-`-g`, then commit `.agents/skills/` and `.claude/skills/`.
+### one repo for the whole team
 
-you also need `git` and `bash`. `gh` only if you pass PR numbers.
+run the npx line inside the repo without `-g`, then commit `.agents/skills/`
+and `.claude/skills/`. everyone who clones gets it.
 
 ## use
 
@@ -98,14 +135,27 @@ you can also run the git part on its own, no AI involved:
 bash ~/.claude/skills/blast-radius/scripts/signals.sh main HEAD
 ```
 
-## video walkthroughs
+## don't want to read it at all? `--video`
 
-add `--video` and you also get an mp4: a colleague who read the PR walks you
-through it in 60 to 120 seconds. tl;dr first, then what changed in the
-architecture (before and after, as a diagram), the tiers, the risky code with
-the bad lines lit up, how they'd fix it, and what to read.
+the report still asks you to read the risky lines. `--video` replaces that.
+you get an mp4 where a colleague who read every line explains the PR to you:
 
-[watch the demo](docs/demo.mp4) (polish voiceover, 1080p)
+1. tl;dr: what it does, how big, the one thing that matters
+2. the architecture before and after, as a diagram, when the change touches it
+3. the tiers: paint gets one sentence, nothing more
+4. a walkthrough of every risky change. the real code on screen, the voice
+   goes through it part by part and the highlight follows along
+5. what's wrong with it and what it costs, then how they'd fix it
+6. the verdict and the next steps. not "go read this", but "save the user
+   before sending the email"
+
+[watch the demo](docs/demo.mp4) (polish voiceover, 1080p, about 2 minutes)
+
+```
+/blast-radius 142 --video --lang pl
+```
+
+how it's built:
 
 - the agent writes a small `video.json` from the review. the scene types are
   in [video.md](skills/blast-radius/video.md), the demo's script is
@@ -115,23 +165,9 @@ the bad lines lit up, how they'd fix it, and what to read.
 - every animation waits for the word that explains it. the voice gives
   per-character timestamps, the scenes hang off those
 - it renders frame by frame on a virtual clock, so no dropped frames even at
-  4k60. `--quality draft|hd|4k` inside `make.mjs`, default hd
-- voiceover by [ElevenLabs](https://elevenlabs.io) if you set a key, any
-  language they support. no key: a silent video with captions
-
-```bash
-# once, optional. without it you get captions only
-mkdir -p ~/.config/blast-radius
-echo "ELEVENLABS_API_KEY=sk_..." >> ~/.config/blast-radius/env
-```
-
-optional: `ELEVENLABS_VOICE_ID` (default is the premade "Chris") and
-`ELEVENLABS_MODEL` (default `eleven_v4`). free elevenlabs plans only get
-premade voices over the api, and a 90 second video is about 1500 characters
-of a 10k monthly free quota. lines are cached, re-renders are free.
-
-the first `--video` run installs the player (`npm install`, ~300 MB with
-chrome). needs node 20+.
+  4k60. hd by default; `node make.mjs <video.json> --quality 4k` for more
+- voiceover by [ElevenLabs](https://elevenlabs.io), any language they
+  support. no key: captions only. setup is in step 3 above
 
 ## what you get
 
